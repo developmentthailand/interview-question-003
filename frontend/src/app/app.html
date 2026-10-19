@@ -1,0 +1,107 @@
+<div class="workspace">
+  <aside class="side-rail" aria-label="Main navigation">
+    <div class="brand-mark" aria-label="Example Workspace">E</div>
+    <nav class="rail-nav">
+      <button class="rail-item" type="button" aria-label="Overview" title="Overview"><span>◫</span></button>
+      <button class="rail-item active" type="button" aria-label="Approvals" title="Approvals"><span>✓</span></button>
+      <button class="rail-item" type="button" aria-label="Documents" title="Documents"><span>▤</span></button>
+    </nav>
+    <div class="rail-bottom"><span class="avatar" aria-label="Reviewer profile">R</span></div>
+  </aside>
+
+  <main class="main-content">
+    <header class="topbar">
+      <div class="crumbs"><span>Workspace</span><span class="crumb-slash">/</span><strong>Approvals</strong></div>
+      <div class="topbar-meta"><span class="live-dot"></span><span>Review workspace</span><span class="avatar small-avatar" aria-hidden="true">R</span></div>
+    </header>
+
+    <section class="page-content" aria-labelledby="page-title">
+      <div class="page-heading">
+        <div>
+          <p class="eyebrow">DOCUMENT CONTROL <span>•</span> QUESTION 03</p>
+          <h1 id="page-title">Approval queue</h1>
+          <p class="subtitle">Review submitted documents and record a clear decision.</p>
+        </div>
+        <button class="refresh-button" type="button" (click)="load()" [disabled]="loading()" aria-label="Refresh list"><span aria-hidden="true">↻</span> Refresh</button>
+      </div>
+
+      <div class="summary-grid" aria-label="Approval totals">
+        <article class="summary-card all-card"><span class="summary-label">All documents</span><strong>{{ countFor('All') }}</strong><span class="summary-icon">▤</span></article>
+        <article class="summary-card pending-card"><span class="summary-label">Pending review</span><strong>{{ countFor('Pending') }}</strong><span class="summary-icon">◷</span></article>
+        <article class="summary-card approved-card"><span class="summary-label">Approved</span><strong>{{ countFor('Approved') }}</strong><span class="summary-icon">✓</span></article>
+        <article class="summary-card rejected-card"><span class="summary-label">Not approved</span><strong>{{ countFor('Rejected') }}</strong><span class="summary-icon">↗</span></article>
+      </div>
+
+      <section class="list-panel" aria-labelledby="list-title">
+        <div class="list-heading">
+          <div><h2 id="list-title">Documents</h2><p>Choose pending items to review together.</p></div>
+          <div class="list-count"><span class="live-dot"></span>{{ pendingCount() }} awaiting action</div>
+        </div>
+
+        <div class="filter-row" role="tablist" aria-label="Filter documents by status">
+          <button type="button" role="tab" [attr.aria-selected]="filter() === 'All'" [class.selected]="filter() === 'All'" (click)="filter.set('All')">All <span>{{ countFor('All') }}</span></button>
+          <button type="button" role="tab" [attr.aria-selected]="filter() === 'Pending'" [class.selected]="filter() === 'Pending'" (click)="filter.set('Pending')">รออนุมัติ <span>{{ countFor('Pending') }}</span></button>
+          <button type="button" role="tab" [attr.aria-selected]="filter() === 'Approved'" [class.selected]="filter() === 'Approved'" (click)="filter.set('Approved')">อนุมัติแล้ว <span>{{ countFor('Approved') }}</span></button>
+          <button type="button" role="tab" [attr.aria-selected]="filter() === 'Rejected'" [class.selected]="filter() === 'Rejected'" (click)="filter.set('Rejected')">ไม่อนุมัติ <span>{{ countFor('Rejected') }}</span></button>
+        </div>
+
+        @if (errorMessage(); as error) { <div class="alert" role="alert">{{ error }} <button type="button" (click)="load()">ลองใหม่</button></div> }
+
+        <div class="bulk-toolbar" [class.toolbar-active]="selectedIds().size > 0">
+          <span class="selection-copy">{{ selectedIds().size }} รายการที่เลือก</span>
+          <div class="bulk-actions">
+            <button class="reject-button" type="button" [disabled]="selectedIds().size === 0" (click)="openDecision('Rejected')"><span>↗</span> ไม่อนุมัติ</button>
+            <button class="approve-button" type="button" [disabled]="selectedIds().size === 0" (click)="openDecision('Approved')"><span>✓</span> อนุมัติ</button>
+          </div>
+        </div>
+
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th class="check-column"><input type="checkbox" aria-label="Select all pending documents" [checked]="allVisiblePendingSelected()" (change)="selectAllVisible($any($event.target).checked)" /></th>
+                <th>DOCUMENT</th><th>SUBMITTED</th><th>STATUS</th><th>DECISION REASON</th>
+              </tr>
+            </thead>
+            <tbody>
+              @if (loading()) {
+                <tr><td colspan="5" class="empty-state"><span class="loader"></span> Loading documents…</td></tr>
+              } @else if (visibleDocuments().length === 0) {
+                <tr><td colspan="5" class="empty-state">No documents in this view.</td></tr>
+              } @else {
+                @for (document of visibleDocuments(); track document.id) {
+                  <tr [attr.data-row-id]="document.id">
+                    <td class="check-column"><input type="checkbox" [attr.aria-label]="'Select ' + document.documentNo" [checked]="selectedIds().has(document.id)" [disabled]="document.status !== 'Pending'" (change)="selectDocument(document.id, $any($event.target).checked)" /></td>
+                    <td><div class="document-cell"><span class="document-icon">▤</span><span><strong>{{ document.title }}</strong><small>{{ document.documentNo }}</small></span></div></td>
+                    <td class="date-cell">{{ document.submittedAtUtc | date: 'dd MMM yyyy' }}</td>
+                    <td><span class="status-pill" [class.pending-status]="document.status === 'Pending'" [class.approved-status]="document.status === 'Approved'" [class.rejected-status]="document.status === 'Rejected'"><i></i>{{ statusLabel(document.status) }}</span></td>
+                    <td class="reason-cell">{{ document.decisionReason || '—' }}</td>
+                  </tr>
+                }
+              }
+            </tbody>
+          </table>
+        </div>
+        <footer class="table-footer"><span>Showing {{ visibleDocuments().length }} of {{ documents().length }} documents</span><span class="footer-note">Updates are saved immediately</span></footer>
+      </section>
+      <footer class="page-footer">Example Workspace <span>•</span> Interview Question 03</footer>
+    </section>
+  </main>
+</div>
+
+@if (decision(); as selectedDecision) {
+  <div class="modal-backdrop" role="presentation" (click)="closeDecision()">
+    <section class="decision-modal" role="dialog" aria-modal="true" aria-labelledby="decision-title" (click)="$event.stopPropagation()">
+      <button class="modal-close" type="button" aria-label="Close dialog" (click)="closeDecision()" [disabled]="saving()">×</button>
+      <div class="modal-symbol" [class.modal-reject]="selectedDecision === 'Rejected'">{{ selectedDecision === 'Approved' ? '✓' : '↗' }}</div>
+      <p class="eyebrow">DOCUMENT DECISION</p>
+      <h2 id="decision-title">{{ selectedDecision === 'Approved' ? 'อนุมัติรายการที่เลือก' : 'ไม่อนุมัติรายการที่เลือก' }}</h2>
+      <p class="modal-description">{{ selectedIds().size }} documents will be {{ selectedDecision === 'Approved' ? 'approved' : 'rejected' }}. Add a reason for the decision.</p>
+      <label for="decision-reason">เหตุผล <span>Required</span></label>
+      <textarea id="decision-reason" [formControl]="reason" rows="4" maxlength="500" placeholder="อธิบายเหตุผลในการพิจารณา…"></textarea>
+      @if (reason.touched && reason.invalid) { <p class="field-error">กรุณาระบุเหตุผลไม่เกิน 500 ตัวอักษร</p> }
+      @if (errorMessage(); as error) { <div class="alert modal-alert" role="alert">{{ error }}</div> }
+      <div class="modal-actions"><button class="cancel-button" type="button" (click)="closeDecision()" [disabled]="saving()">ยกเลิก</button><button class="modal-confirm" [class.confirm-reject]="selectedDecision === 'Rejected'" type="button" (click)="confirmDecision()" [disabled]="saving() || reason.invalid">{{ saving() ? 'กำลังบันทึก…' : selectedDecision === 'Approved' ? 'ยืนยันอนุมัติ' : 'ยืนยันไม่อนุมัติ' }}</button></div>
+    </section>
+  </div>
+}
