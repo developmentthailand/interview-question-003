@@ -38,6 +38,6 @@ npm test
 npm run build
 ```
 
-Results: backend **4 passed**, Angular **4 passed**, Release build clean, and production Angular bundle **221.65 kB** initial (estimated transfer **62.00 kB**).
+Results: backend **3 passed**, Angular **4 passed**, Release build clean, and production Angular bundle **221.65 kB** initial (estimated transfer **62.00 kB**).
 
 Package identity: `@example-com/interview-question-003`; namespace: `Example.Com.InterviewQuestion003`.
